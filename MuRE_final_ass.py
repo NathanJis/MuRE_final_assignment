@@ -21,13 +21,12 @@ def diff(x,init): #just thouht about this, we might need to model the gas concen
     dchgdz_small = -(diffH*small_area*(chg_small-chl)*num_small)/v_small_bub
     dccoldz = -dccogdz_big - dccogdz_small - arrhenius*(((ccol*R*T)*0.33)**1.88*((chl*R*T)*0.66)**-0.67) #paper 2 smething is wrong, it doesnt go back to 0 for infinite reaction rates
     dchldz = -dchgdz_big - dchgdz_small - 2*arrhenius*(((ccol*R*T)*0.33)**1.88*((chl*R*T)*0.66)**-0.67) # paper 2
-    print(ccol, dccoldz)
     return dccogdz_big,dchgdz_big, dccogdz_small,dccogdz_small, dccoldz,dchldz
 
 diffH = 3.81e-7 #from data companion
 diffCO = 1.60e-7 #from data companion
 stages = 2
-height = 10 #made up this is height per stage
+height = 10 #made up this is total height
 diam = 7 #made up
 P = 3000000 #paper 1
 R = 8.314
@@ -54,33 +53,77 @@ init = [ccog0,chg0,ccog0,chg0,0.1,0.1] # 0.1 otherwise code crashes
 height_stage = height/stages
 z = np.linspace(0,height_stage,100)
 
- 
-
-
-sol = integrate.solve_ivp(diff,[0,height_stage], init, method='BDF', t_eval=z)
-
-#plt.figure(1)
-#plt.plot(sol.t,sol.y[0])
-#plt.plot(sol.t,sol.y[1])
-plt.figure(2)
-plt.plot(sol.t,sol.y[4], label = "CO")
-plt.plot(sol.t,sol.y[5], label ="H")
-plt.legend()
-init1 = [sol.y[0][-1], sol.y[1][-1],sol.y[2][-1], sol.y[3][-1],sol.y[4][-1], sol.y[5][-1]]
-
-
-for i in range(stages-1): #this increases stages
-    sol = integrate.solve_ivp(diff,[0,height], init1, method='BDF', t_eval=z)
-    #plt.figure(1)
-    #plt.plot(sol.t,sol.y[0])
-    #plt.plot(sol.t,sol.y[1])
+def run_simul():
+    sol = integrate.solve_ivp(diff,[0,height_stage], init, method='BDF', t_eval=z)
+    """
+    plt.figure(1)
+    plt.plot(sol.t,sol.y[0])
+    plt.plot(sol.t,sol.y[1])
     plt.figure(2)
     plt.plot(sol.t,sol.y[4], label = "CO")
-    plt.plot(sol.t,sol.y[5], label = "H")
+    plt.plot(sol.t,sol.y[5], label ="H")
     plt.legend()
-    init1 = [sol.y[0][-1], sol.y[1][-1],sol.y[2][-1], sol.y[3][-1]]
+    """
+    init1 = [sol.y[0][-1], sol.y[1][-1],sol.y[2][-1], sol.y[3][-1],sol.y[4][-1], sol.y[5][-1]]
+    
+    
+    for i in range(stages-1): #this increases stages
+        sol = integrate.solve_ivp(diff,[0,height], init1, method='BDF', t_eval=z)
+        """
+        plt.figure(1)
+        plt.plot(sol.t,sol.y[0])
+        plt.plot(sol.t,sol.y[1])
+        plt.figure(2)
+        plt.plot(sol.t,sol.y[4], label = "CO")
+        plt.plot(sol.t,sol.y[5], label = "H")
+        plt.legend()
+        """
+        init1 = [sol.y[0][-1], sol.y[1][-1],sol.y[2][-1], sol.y[3][-1],sol.y[4][-1], sol.y[5][-1]]
+    return init1
+
+diam_arr = np.linspace(1,7,7)
+diam_sens_lis_co = []
+diam_sens_lis_h = []
+for diam in diam_arr:
+    num_big = (bub_split*(np.pi/4)*diam**2*e)/((1/6)*np.pi*big_bub_diam**3) #to calc total area of exchange in ODE
+    num_small = ((1-bub_split)*(np.pi/4)*diam**2*e)/((1/6)*np.pi*small_bub_diam**3) #to calc total area of exchange in ODE
+    simul = run_simul()
+    diam_sens_lis_co.append(simul[4])
+    diam_sens_lis_h.append(simul[5])
+
+plt.figure(1)
+plt.scatter(diam_arr, diam_sens_lis_co)
+plt.scatter(diam_arr, diam_sens_lis_h)
+
+diam = 7
 
 
+height_arr = np.linspace(0.5,5,9)
+height_sens_lis_co = []
+height_sens_lis_h = []
+for height in height_arr:
+    height_stage = height/stages
+    z = np.linspace(0,height_stage,100)
+    simul = run_simul()
+    height_sens_lis_co.append(simul[4])
+    height_sens_lis_h.append(simul[5])
 
+plt.figure(2)
+plt.scatter(height_arr, height_sens_lis_co)
+plt.scatter(height_arr, height_sens_lis_h)
 
+height = 10
 
+stage_arr = np.linspace(1,5,5)
+stage_sens_lis_co = []
+stage_sens_lis_h = []
+for stage in stage_arr:
+    height_stage = height/stage
+    z = np.linspace(0,height_stage,100)
+    simul = run_simul()
+    stage_sens_lis_co.append(simul[4])
+    stage_sens_lis_h.append(simul[5])
+
+plt.figure(3)
+plt.scatter(stage_arr, stage_sens_lis_co)
+plt.scatter(stage_arr, stage_sens_lis_h)
