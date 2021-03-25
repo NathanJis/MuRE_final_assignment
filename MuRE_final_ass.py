@@ -9,6 +9,8 @@ Created on Thu Mar  4 11:23:54 2021
 #paper 2  = Modeling of a slurry bubble column reactor for Fischer-Tropsch synthesis
 #conc in liquid is way too hard here
 
+# this is a test comment
+
 from scipy import integrate 
 import numpy as np 
 import matplotlib.pyplot as plt 
