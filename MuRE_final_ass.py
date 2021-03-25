@@ -5,8 +5,8 @@ Created on Thu Mar  4 11:23:54 2021
 @author: natha
 """
 
-#paper 1 = Design and optimisation of a multi-stage bubble column slurry reactor for Fischer-Tropsch synthesis
-#paper 2  = Modeling of a slurry bubble column reactor for Fischer-Tropsch synthesis
+#paper 1 = Design and optimisation of a multi-stage bubble column slurry reactor for Fischer-Tropsch synthesis (maretto 2001)
+#paper 2  = Modeling of a slurry bubble column reactor for Fischer-Tropsch synthesis (qian 2012)
 #conc in liquid is way too hard here
 
 from scipy import integrate 
@@ -15,7 +15,9 @@ import matplotlib.pyplot as plt
 
 def diff(x,init): #just thouht about this, we might need to model the gas concentrations is different bubbles separately
     ccog_big,chg_big,ccog_small,chg_small, ccol, chl= init
-    dccogdz_big = (-diffCO*big_area*(ccog_big-ccol)*num_big)/v_big_bub 
+
+    # nicolas: is it possible to further split up the differential equations to make them more readable?
+    dccogdz_big = (-diffCO*big_area*(ccog_big-ccol)*num_big)/v_big_bub
     dccogdz_small = -(diffCO*small_area*(ccog_small-ccol)*num_small)/v_small_bub
     dchgdz_big = (-diffH*big_area*(chg_big-chl)*num_big)/v_big_bub 
     dchgdz_small = -(diffH*small_area*(chg_small-chl)*num_small)/v_small_bub
@@ -39,6 +41,7 @@ v_big_bub =2 #paper 1
 v_small_bub = 4 #made up this might need to be 0.0025 based on liquid velocity
 big_area = np.pi*big_bub_diam
 small_area = np.pi*small_bub_diam
+# nicolas: can we rename the two variables below? The names are not really descriptive
 num_big = (bub_split*(np.pi/4)*diam**2*e)/((1/6)*np.pi*big_bub_diam**3) #to calc total area of exchange in ODE
 num_small = ((1-bub_split)*(np.pi/4)*diam**2*e)/((1/6)*np.pi*small_bub_diam**3) #to calc total area of exchange in ODE
 
@@ -46,6 +49,7 @@ num_small = ((1-bub_split)*(np.pi/4)*diam**2*e)/((1/6)*np.pi*small_bub_diam**3) 
 T = 400 # paper 1
 arrhenius = 5.04e6*np.exp((-108.67e3)/(8.314*T)) #paper 2
 
+# TODO: we need to add comments below here
 
 ccog0 = 0.33*(P/(R*T))
 chg0 = 0.67*(P/(R*T))
