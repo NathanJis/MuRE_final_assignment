@@ -4,6 +4,7 @@ Created on Thu Mar  4 11:23:54 2021
 
 @author: natha
 """
+# this is a test comment to test git
 
 #paper 1 = Design and optimisation of a multi-stage bubble column slurry reactor for Fischer-Tropsch synthesis
 #paper 2  = Modeling of a slurry bubble column reactor for Fischer-Tropsch synthesis
