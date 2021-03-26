@@ -49,3 +49,11 @@ liq_area = el*(np.pi/4)*diam**2 #m2
 v_liq = vol_flow/liq_area #m/s
 print(v_liq)
 
+P =3000000
+kg_per_sec = 2000e3/(24*3600)
+avg_mw = 2.018*0.67+28*0.33
+mol_per_sec = kg_per_sec/avg_mw
+vol_per_sec = mol_per_sec*R*T/P
+react_A_gas = np.pi*7**2*0.4
+sup_gas_v = vol_per_sec/react_A_gas
+print(sup_gas_v)
