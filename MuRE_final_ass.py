@@ -1,88 +1,157 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Mar  4 11:23:54 2021
 
-@author: natha
-"""
-
-#paper 1 = Design and optimisation of a multi-stage bubble column slurry reactor for Fischer-Tropsch synthesis
-#paper 2  = Modeling of a slurry bubble column reactor for Fischer-Tropsch synthesis
-#conc in liquid is way too hard here
-
-# this is a test comment
-
-from scipy import integrate 
+# import libraries
+# from scipy import integrate
+from scipy import optimize
 import numpy as np 
 import matplotlib.pyplot as plt 
 
-def diff(x,init): #just thouht about this, we might need to model the gas concentrations is different bubbles separately
-    ccog_big,chg_big,ccog_small,chg_small, ccol, chl= init
-    dccogdz_big = (-diffCO*big_area*(ccog_big-ccol)*num_big)/v_big_bub 
-    dccogdz_small = -(diffCO*small_area*(ccog_small-ccol)*num_small)/v_small_bub
-    dchgdz_big = (-diffH*big_area*(chg_big-chl)*num_big)/v_big_bub 
-    dchgdz_small = -(diffH*small_area*(chg_small-chl)*num_small)/v_small_bub
-    dccoldz = -dccogdz_big - dccogdz_small - arrhenius*(((ccol*R*T)*0.33)**1.88*((chl*R*T)*0.66)**-0.67) #paper 2 smething is wrong, it doesnt go back to 0 for infinite reaction rates
-    dchldz = -dchgdz_big - dchgdz_small - 2*arrhenius*(((ccol*R*T)*0.33)**1.88*((chl*R*T)*0.66)**-0.67) # paper 2
-    return dccogdz_big,dchgdz_big, dccogdz_small,dccogdz_small, dccoldz,dchldz
 
-diffH = 3.81e-7 #from data companion
-diffCO = 1.60e-7 #from data companion
-stages = 2
-height = 10 #made up this is total height
-diam = 7 #made up
-P = 3000000 #paper 1
-R = 8.314
-
-bub_split = 0.7 #i made this up juet to make an artificial balance between small and large bubbles
-e = 0.4 #voidage also made up for now
-big_bub_diam = 45e-3 #paper 1
-small_bub_diam = 7e-3 #paper 1
-v_big_bub =2 #paper 1
-v_small_bub = 4 #made up this might need to be 0.0025 based on liquid velocity
-big_area = np.pi*big_bub_diam
-small_area = np.pi*small_bub_diam
-num_big = (bub_split*(np.pi/4)*diam**2*e)/((1/6)*np.pi*big_bub_diam**3) #to calc total area of exchange in ODE
-num_small = ((1-bub_split)*(np.pi/4)*diam**2*e)/((1/6)*np.pi*small_bub_diam**3) #to calc total area of exchange in ODE
+# define functions
+def p_to_c_ideal_gas(p):
+    return p / R / T
 
 
-T = 400 # paper 1
-arrhenius = 5.04e6*np.exp((-108.67e3)/(8.314*T)) #paper 2
+def c_to_p_ideal_gas(c):
+    return c * R * T
 
 
-ccog0 = 0.33*(P/(R*T))
-chg0 = 0.67*(P/(R*T))
-init = [ccog0,chg0,ccog0,chg0,0.1,0.1] # 0.1 otherwise code crashes
-height_stage = height/stages
-z = np.linspace(0,height_stage,100)
+# define equation system
+def AES(x):
+    U_large, j_CO_avg, j_H2_avg, C_CO_l, C_H2_l, U_l, eps_large_avg, R_CO, R_H2, kLa_CO_avg, kLa_H2_avg, U_large_avg, p_CO_l, p_H2_l, eps_slurry = x
+    return [
+        # balances
+        (U_large_previous_stage - U_large) * (C_CO_large + C_H2_large) - H_stage * (j_CO_avg + j_H2_avg),
+        H_stage * j_CO_avg + C_CO_l_previous_stage * U_l_previous_stage - C_CO_l * U_l - H_stage * eps_slurry * R_CO,
+        H_stage * j_H2_avg + C_H2_l_previous_stage * U_l_previous_stage - C_H2_l * U_l - H_stage * eps_slurry * R_H2,
+        # constituent equations
+        j_CO_avg - (kLa_CO_avg * (C_CO_large / H_CO - C_CO_l)),
+        j_H2_avg - (kLa_H2_avg * (C_H2_large / H_H2 - C_H2_l)),
+        U_large_avg - (0.5 * (U_large + U_l_previous_stage)),
+        eps_large_avg - (0.3 * abs(U_large_avg)**0.58),
+        kLa_CO_avg - (eps_large_avg * 0.5 * np.sqrt(D_CO / D_ref)),
+        kLa_H2_avg - (eps_large_avg * 0.5 * np.sqrt(D_H2 / D_ref)),
+        U_l - (U_l_previous_stage + (H_stage * eps_slurry * A_reactor * R_CO * M_CO + H_stage * eps_slurry * A_reactor * R_H2 * M_H2) / rho_slurry / A_reactor),
+        R_CO - (F * a * p_H2_l * p_CO_l / (1 + b * p_CO_l)**2 * eps_cat * rho_skeleton_cat),
+        R_H2 - (2 * R_CO),
+        p_CO_l - (H_CO * C_CO_l * R * T * 10**-5),
+        p_H2_l - (H_H2 * C_H2_l * R * T * 10**-5),
+        eps_slurry - (1 - eps_large_avg),
+            ]
 
-def run_simul():
-    sol = integrate.solve_ivp(diff,[0,height_stage], init, method='BDF', t_eval=z)
-    """
-    plt.figure(1)
-    plt.plot(sol.t,sol.y[0])
-    plt.plot(sol.t,sol.y[1])
-    plt.figure(2)
-    plt.plot(sol.t,sol.y[4], label = "CO")
-    plt.plot(sol.t,sol.y[5], label ="H")
-    plt.legend()
-    """
-    init1 = [sol.y[0][-1], sol.y[1][-1],sol.y[2][-1], sol.y[3][-1],sol.y[4][-1], sol.y[5][-1]]
-    
-    
-    for i in range(stages-1): #this increases stages
-        sol = integrate.solve_ivp(diff,[0,height], init1, method='BDF', t_eval=z)
-        """
-        plt.figure(1)
-        plt.plot(sol.t,sol.y[0])
-        plt.plot(sol.t,sol.y[1])
-        plt.figure(2)
-        plt.plot(sol.t,sol.y[4], label = "CO")
-        plt.plot(sol.t,sol.y[5], label = "H")
-        plt.legend()
-        """
-        init1 = [sol.y[0][-1], sol.y[1][-1],sol.y[2][-1], sol.y[3][-1],sol.y[4][-1], sol.y[5][-1]]
-    return init1
+#####################################################################################################
+# parameter and variable definition
 
+# design variables
+number_of_stages = 1    # number of stages
+height_reactor = 5      # reactor diameter in m
+diam_reactor = 7        # reactor diameter in m
+U_in = 0.3              # inlet superficial gas velocity in m/s
+P = 30 * 10**5          # pressure in Pa
+T = 240 + 273.15        # temperature in K
+dp = 50 * 10**-6        # catalyst particle size in m
+eps_cat = 0.35          # catalyst concentration in vol_cat/vol_slurry
+feed_ratio = 2          # ratio of C_H2/C_CO
+# inlet conditions
+U_large_previous_stage = U_in
+C_CO_l_previous_stage = 0  # 0 for fresh slurry
+C_H2_l_previous_stage = 0  # 0 for fresh slurry
+U_l_previous_stage = 0  # 0 for semi-batch
+
+# independent parameters
+# constants
+R = 8.314               # universal gas constant in J/mol/K
+# species parameter
+M_CO = 0.02801          # molar mass CO in kg/mol
+M_H2 = 0.002            # molar mass CO in kg/mol
+H_CO = 2.478            # henry coefficient CO at T=240 °C (maretto1999)
+H_H2 = 2.964            # henry coefficient H2 at T=240 °C (maretto1999)
+D_CO = 17.2 * 10**-9    # CO diffusivity in m2/s at T=240 °C (maretto2001)
+D_H2 = 45.5 * 10**-9    # H2 diffusivity in m2/s at T=240 °C (maretto2001)
+D_ref = 2 * 10**-9      # reference diffusivity in m2/s (maretto1999)
+# solvent parameters (C16H24)
+rho_solvent = 640               # solvent density in kg/m3 at T=240 °C (maretto1999)
+visco_solvent = 2.9 * 10**-4    # solvent viscosity in Pas at T=240 °C (maretto1999)
+surf_tension_solvent = 0.01     # solvent surface tenstion in N/m at T=240 °C (maretto1999)
+# catalyst parameters
+rho_cat = 647               # catalyst density (inluding pores) in kg/m3 (maretto1999)
+V_pores = 0.00105           # catalyst pore volume in m3/kg (maretto1999)
+rho_skeleton_cat = 2030     # catalyst skeleton density in kg/m3 (maretto1999)
+# kinetic parameters
+a0 = 8.88533 * 10**-3       # Reaction rate coefficient at T = 493.15 K  in mol/s/kgcat/bar2 (assignment pdf)
+b0 = 2.226                  # Adsorption coefficient at T = 493.15 K in 1/bar (assignment pdf)
+Ea = 3.737 * 10**4          # activation energy in J/mol (assignment pdf)
+deltabH = -6.837 * 10**3    # adsorption enthalpy in J/mol (assignment pdf)
+F = 3                       # catalyst activity multiplication factor (assignment pdf)
+
+# calculate dependent parameters
+# bubble concentrations
+C_CO_large = p_to_c_ideal_gas(P / (1 + feed_ratio))
+C_H2_large = p_to_c_ideal_gas(P / (1 + 1 / feed_ratio))
+# kinetic parameters
+a = a0 * np.exp(Ea/R * (1/493.15 - 1/T))        # langmuir hinshelwood parameter 1 mol/s/kgcat/bar2
+b = b0 * np.exp(deltabH/R * (1/493.15 - 1/T))   # langmuir hinshelwood parameter 2 in 1/bar
+# hydrodynamic parameters
+A_reactor = np.pi * diam_reactor ** 2 / 4  # reactor cross section area in m2
+H_stage = height_reactor/number_of_stages
+U_large = 1  # superficial gas velocity for large bubbles in m/s
+U_small = 1  # superficial gas velocity for small bubbles in m/s
+# slurry parameters
+rho_slurry = rho_solvent * (1 - rho_solvent/rho_skeleton_cat * eps_cat) + rho_cat * eps_cat # slurry density in kg/m3 (maretto2009, 23)
+visco_slurry = visco_solvent * (1 + 4.5 * eps_cat)                                          # slurry viscosity in Pas (maretto2009, 24)
+
+
+#####################################################################################################
+# simulation
+
+# initial guess definition
+# , , , , , , , , , ,
+# , ,
+initial_guess = np.array([
+    U_in,  # U_large
+    1,  # j_CO_avg
+    1,  # j_H2_avg
+    C_CO_large,  # C_CO_l
+    C_H2_large,  # C_H2_l
+    1,  # U_l
+    0.5,  # eps_large_avg
+    1,  # R_CO
+    1,  # R_H2
+    1,  # k_La_CO_avg
+    1,  # k_La_H2_avg
+    U_in,  # U_large_avg
+    c_to_p_ideal_gas(C_CO_large) * 10**-5,  # p_CO_l
+    c_to_p_ideal_gas(C_H2_large) * 10**-5,  # p_H2_l
+    0.5   # eps_slurry
+])
+
+stage_solutions = []
+for stage_counter in range(number_of_stages):
+    sol, output, ier, mesg = optimize.fsolve(AES, initial_guess, full_output=True)
+    # print(ier)
+    print(mesg)
+    # root = optimize.root(AES, initial_guess)
+    # sol = root.x
+    stage_solutions.append(sol)  # save solutions of this stage
+    initial_guess = sol  # the initial guess for the next stage
+
+    print('residuals: ',AES(sol))
+    print('sum of residuals = ', sum(AES(sol)))
+    print()
+
+    # define boundary inlet conditions for the next stage
+    U_large_previous_stage = sol[0]
+    C_CO_l_previous_stage = sol[3]
+    C_H2_l_previous_stage = sol[4]
+    U_l_previous_stage = sol[5]
+
+sol_labels = ['U_large', 'j_CO_avg', 'j_H2_avg', 'C_CO_l', 'C_H2_l', 'U_l', 'eps_large_avg', 'R_CO', 'R_H2', 'kLa_CO_avg', 'kLa_H2_avg', 'U_large_avg', 'p_CO_l', 'p_H2_l', 'eps_slurry']
+for i in range(len(sol_labels)):
+    print('%s =\t %s' % (sol_labels[i], round(sol[i],5)))
+
+exit()
+################################################################
+# sensitivity analysis
 diam_arr = np.linspace(1,7,7)
 diam_sens_lis_co = []
 diam_sens_lis_h = []
