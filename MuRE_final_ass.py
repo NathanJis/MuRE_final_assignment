@@ -27,7 +27,7 @@ def AES(x):
         # constituent equations
         j_CO_avg - (kLa_CO_avg * (C_CO_large / H_CO - C_CO_l)),
         j_H2_avg - (kLa_H2_avg * (C_H2_large / H_H2 - C_H2_l)),
-        U_large_avg - (0.5 * (U_large + U_l_previous_stage)),
+        U_large_avg - (0.5 * (U_large + U_large_previous_stage)),
         eps_large_avg - (0.3 * abs(U_large_avg)**0.58),
         kLa_CO_avg - (eps_large_avg * 0.5 * np.sqrt(D_CO / D_ref)),
         kLa_H2_avg - (eps_large_avg * 0.5 * np.sqrt(D_H2 / D_ref)),
@@ -105,8 +105,6 @@ visco_slurry = visco_solvent * (1 + 4.5 * eps_cat)                              
 # simulation
 
 # initial guess definition
-# , , , , , , , , , ,
-# , ,
 initial_guess = np.array([
     U_in,  # U_large
     1,  # j_CO_avg
