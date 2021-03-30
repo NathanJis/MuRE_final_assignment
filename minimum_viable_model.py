@@ -82,9 +82,9 @@ def AES(x):
 #####################################################################################################
 # parameter and variable definition
 # design variables
-number_of_stages = 2  # number of stages
+number_of_stages = 10  # number of stages
 n_slices = 10  # number of slices
-height_reactor = 2  # reactor diameter in m
+height_reactor = 5  # reactor diameter in m
 diam_reactor = 1  # reactor diameter in m
 U_in = 0.3  # inlet superficial gas velocity in m/s
 P = 30 * 10 ** 5  # pressure in Pa
@@ -92,7 +92,6 @@ T = 240 + 273.15  # temperature in K
 dp = 50 * 10 ** -6  # catalyst particle size in m
 eps_cat = 0.35  # catalyst concentration in vol_cat/vol_slurry
 feed_ratio = 2  # ratio of C_H2/C_CO
-h = height_reactor / number_of_stages / n_slices  # finite difference step size
 # inlet conditions
 U_lb_previous_stage = U_in
 C_CO_l_previous_stage = 0  # 0 for fresh slurry
@@ -126,6 +125,8 @@ deltabH = -6.837 * 10 ** 3  # adsorption enthalpy in J/mol (assignment pdf)
 F = 3  # catalyst activity multiplication factor (assignment pdf)
 
 # calculate dependent parameters
+h = height_reactor / number_of_stages / n_slices  # finite difference step size
+print(h)
 # bubble concentrations
 C_CO_lb = p_to_c_ideal_gas(P / (1 + feed_ratio))
 C_H2_lb = p_to_c_ideal_gas(P / (1 + 1 / feed_ratio))
@@ -178,7 +179,7 @@ for stage_counter in range(number_of_stages):
 
 print('The final conversion is %s percent' % (round(1 - U_lb_previous_stage / U_in, 2) * 100))
 
-
+# create arrays that hold the calculated variables
 U_lb_array = []
 j_CO_array = []
 j_H2_array = []
@@ -190,9 +191,10 @@ for i in range(number_of_stages):
         j_CO_array.append(stage_solutions[i][j * 4 + 1])
         j_H2_array.append(stage_solutions[i][j * 4 + 2])
         eps_sl_array.append(stage_solutions[i][j * 4 + 3])
-        slice_height_array.append(i + h * (j + 1))
+        slice_height_array.append(i * height_reactor / number_of_stages + h * (j + 1))
 
 
+print(slice_height_array)
 plt.figure()
 plt.plot(0, U_in, 'o', color='blue')
 plt.plot(slice_height_array, U_lb_array, 'o', color='blue')
