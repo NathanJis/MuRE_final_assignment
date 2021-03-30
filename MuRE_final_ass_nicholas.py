@@ -55,7 +55,8 @@ number_of_stages = 5    # number of stages
 slices = 10              #number of slices
 height_reactor = 5     # reactor diameter in m
 diam_reactor = 7        # reactor diameter in m
-U_in = 0.3              # inlet superficial gas velocity in m/s
+kg_per_day = 2000e3     #throughput per day       
+
 P = 30 * 10**5          # pressure in Pa
 T = 240 + 273.15        # temperature in K
 dp = 50 * 10**-6        # catalyst particle size in m
@@ -103,6 +104,8 @@ a = a0 * np.exp(Ea/R * (1/493.15 - 1/T))        # langmuir hinshelwood parameter
 b = b0 * np.exp(deltabH/R * (1/493.15 - 1/T))   # langmuir hinshelwood parameter 2 in 1/bar
 # hydrodynamic parameters
 A_reactor = np.pi * diam_reactor ** 2 / 4  # reactor cross section area in m2
+U_in = (((kg_per_day/(24*3600))/(3*M_CO))*(R*T/P))/(A_reactor)  # inlet superficial gas velocity in m/s
+U_lb_previous_stage = U_in 
 H_stage = height_reactor/number_of_stages
 U_lb = 1  # superficial gas velocity for lb bubbles in m/s
 U_small = 1  # superficial gas velocity for small bubbles in m/s
