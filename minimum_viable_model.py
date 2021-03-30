@@ -38,9 +38,9 @@ def generate_initial_guess(N):
 
 def calculate_differential_slice(U_lb_slice_in, U_lb_slice_out, j_CO, j_H2, eps_sl, C_CO_l, C_H2_l):
     mass_balance_gas_residual = (U_lb_slice_out - U_lb_slice_in) / h + (j_CO + j_H2) / (C_CO_lb + C_H2_lb)
-    mass_transfer_CO_residual = j_CO - (0.3 * U_lb_slice_out ** 0.58 * np.sqrt(D_CO / D_ref) * (C_CO_lb / H_CO - C_CO_l))
-    mass_transfer_H2_residual = j_H2 - (0.3 * U_lb_slice_out ** 0.58 * np.sqrt(D_H2 / D_ref) * (C_H2_lb / H_H2 - C_H2_l))
-    slurry_holdup_residual = eps_sl - (1 - 0.3 * U_lb_slice_out ** 0.58)
+    mass_transfer_CO_residual = j_CO - (0.3 / diam_reactor**0.18 * U_lb_slice_out ** 0.58 * np.sqrt(D_CO / D_ref) * (C_CO_lb / H_CO - C_CO_l))
+    mass_transfer_H2_residual = j_H2 - (0.3 / diam_reactor**0.18 * U_lb_slice_out ** 0.58 * np.sqrt(D_H2 / D_ref) * (C_H2_lb / H_H2 - C_H2_l))
+    slurry_holdup_residual = eps_sl - (1 - 0.3 / diam_reactor**0.18 * U_lb_slice_out ** 0.58)
     return mass_balance_gas_residual, mass_transfer_CO_residual, mass_transfer_H2_residual, slurry_holdup_residual
 
 
@@ -82,11 +82,11 @@ def AES(x):
 #####################################################################################################
 # parameter and variable definition
 # design variables
-number_of_stages = 10  # number of stages
-n_slices = 10  # number of slices
-height_reactor = 5  # reactor diameter in m
-diam_reactor = 1  # reactor diameter in m
-U_in = 0.3  # inlet superficial gas velocity in m/s
+number_of_stages = 5  # number of stages
+n_slices = 100  # number of slices
+height_reactor = 4  # reactor diameter in m
+diam_reactor = 2  # reactor diameter in m
+U_in = 1  # inlet superficial gas velocity in m/s
 P = 30 * 10 ** 5  # pressure in Pa
 T = 240 + 273.15  # temperature in K
 dp = 50 * 10 ** -6  # catalyst particle size in m
