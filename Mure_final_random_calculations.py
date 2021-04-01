@@ -5,9 +5,10 @@ Created on Mon Mar 22 15:05:27 2021
 @author: natha
 """
 import numpy as np
+import matplotlib.pyplot as plt 
 
-sizes = [20e-6,40e-6,60e-6,80e-6,100e-6,120e-6]
-kla = 0.6
+sizes = [20e-6,40e-6,60e-6,80e-6,100e-6,120e-6,150e-6,200e-6,400e-6,800e-6]
+kla = 0.14
 
 rhos =2648 #siliciumdioxide
 D=3e-9
@@ -26,7 +27,7 @@ el = 1-eg-es
 g =9.81
 dp = (rhos*es+rhol*el+rhog*eg)*g #barghi
 dps = -(1-eg)*9.81*(rhos*es+rhol*el)/(es+el) #schneider
-print(dp,dps)
+#print(dp,dps)
 
 Dh_oil = 4e-9 #hydrogen diffusion in transformer oil as baseline
 #maybe we can use dahmkohler to prove we can neglect liquid-solid, but i don't know if calculation is right
@@ -34,12 +35,13 @@ for size in sizes:
     Da_d = km*size/2
     Da_c = km**size**2/Dh_oil
     #print(Da_d, Da_c)
-T =400
+
+T =513
 R =8.314
 ccog0 = 297
 chg0= 604    
 Da = 3.24e-8*(((ccog0*R*T)*0.33)**1.88*((chg0*R*T)*0.66)**-0.67)/kla
-print(Da)
+#print(Da)
 
 diam = 6
 flow = 2000e3 #tonne per day
@@ -47,13 +49,22 @@ vol_flow_day = flow/rhol #m3/day
 vol_flow = vol_flow_day/(24*60*60) #m3/s
 liq_area = el*(np.pi/4)*diam**2 #m2
 v_liq = vol_flow/liq_area #m/s
-print(v_liq)
+#print(v_liq)
 
-P =3000000
+P = 3000000
 kg_per_sec = 2000e3/(24*3600)
-avg_mw = 2.018*0.67+28*0.33
-mol_per_sec = kg_per_sec/avg_mw
+avg_mw = 28/1000
+mol_per_sec = kg_per_sec*3/avg_mw
 vol_per_sec = mol_per_sec*R*T/P
-react_A_gas = np.pi*7**2*0.4
+react_A_gas = (np.pi/4)*4**2
 sup_gas_v = vol_per_sec/react_A_gas
-print(sup_gas_v)
+#print(sup_gas_v)
+
+prod_range= np.linspace(1,15,15)
+alpha_cobalt = 0.63 #from vervolet
+and_sch_flo = (1-alpha_cobalt)*alpha_cobalt**prod_range
+norm = and_sch_flo*prod_range/sum(and_sch_flo*prod_range)
+plt.scatter(prod_range+1,norm)
+plt.title("Anderson-Schultz-Flory product length distribution")
+plt.ylabel("Relative proportion of CO reaction rate")
+plt.xlabel("Chain length")
