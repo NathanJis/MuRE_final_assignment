@@ -11,13 +11,13 @@ import time
 #####################################################################################################
 # design variables and execution options
 # design variable definition
-number_of_stages = 10        # number of stages
-height_reactor = 15          # reactor diameter in m
+number_of_stages = 18        # number of stages
+height_reactor = 18          # reactor diameter in m
 diam_reactor = 2.5            # reactor diameter in m
+eps_cat = 0.35              # catalyst concentration in vol_cat/vol_slurry
 P = 30 * 1e5                # pressure in Pa
 T = 240 + 273.15            # temperature in K
 dp = 50 * 1e-6              # catalyst particle size in m
-eps_cat = 0.35              # catalyst concentration in vol_cat/vol_slurry
 feed_ratio = 2              # ratio of C_H2/C_CO
 feed_mass_flow_rate = 2e6   # reactor feed mass flow rate of CO in kg/day
 # code settings
